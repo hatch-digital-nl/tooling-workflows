@@ -26,6 +26,8 @@ on:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    outputs:
+      sha_tag: ${{ steps.set_output.outputs.sha_tag }}
     permissions:
       contents: read
       packages: write
