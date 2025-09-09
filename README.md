@@ -85,6 +85,9 @@ on:
 jobs:
   call-kustomize:
     uses: unframed-nl/tooling-workflows/.github/workflows/process_kustomize.yml@master
+    permissions:
+      contents: write
+      pull-requests: write
     with:
       main_branch: master
       develop_branch: develop
