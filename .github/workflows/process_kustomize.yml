@@ -73,12 +73,15 @@ jobs:
       - name: Check for changes in merged files
         id: check-changes
         run: |
-          if git diff --quiet; then
+          # Check for both modified files AND untracked files
+          if git diff --quiet && [ -z "$(git ls-files --others --exclude-standard)" ]; then
             echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "No changes detected"
           else
             echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "Changes detected:"
+            git status --porcelain
           fi
-
       - name: Create Pull Request
         if: steps.check-changes.outputs.has_changes == 'true'
         uses: peter-evans/create-pull-request@v7
