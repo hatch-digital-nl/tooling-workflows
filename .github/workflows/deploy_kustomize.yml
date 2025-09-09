@@ -1,0 +1,52 @@
+name: Update Kustomize Image (Gitflow overlays)
+
+on:
+  workflow_call:
+    inputs:
+      kustomize_image:
+        required: true
+        type: string
+      image_tag:
+        required: true
+        type: string
+
+jobs:
+  update-kustomize:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Determine overlay path
+        id: overlay
+        run: |
+          BRANCH_NAME="${GITHUB_REF##*/}"
+          if [[ "$BRANCH_NAME" == "develop" ]]; then
+            OVERLAY=".k8s/overlays/testing"
+          elif [[ "$BRANCH_NAME" == release/* ]]; then
+            OVERLAY=".k8s/overlays/acceptance"
+          elif [[ "$BRANCH_NAME" == main || "$BRANCH_NAME" == master ]]; then
+            OVERLAY=".k8s/overlays/production"
+          else
+            echo "Branch not mapped to overlay, exiting"
+            exit 0
+          fi
+          echo "overlay_path=$OVERLAY" >> $GITHUB_OUTPUT
+
+      - name: Install kustomize
+        run: |
+          curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+          mv kustomize /usr/local/bin/
+
+      - name: Set image in kustomization.yaml
+        run: |
+          cd ${{ steps.overlay.outputs.overlay_path }}
+          kustomize edit set image ${{ inputs.kustomize_image }}=${{ inputs.image_tag }}
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .
+          git commit -m "Update image to ${{ inputs.image_tag }} [skip ci]" || echo "No changes"
+          git push

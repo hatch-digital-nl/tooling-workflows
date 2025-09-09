@@ -1,0 +1,77 @@
+name: Gitflow Sync
+
+on:
+  workflow_call:
+    inputs:
+      main_branch:
+        required: false
+        type: string
+        default: master
+      develop_branch:
+        required: false
+        type: string
+        default: develop
+
+jobs:
+  sync-branches:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Detect branch
+        id: branch
+        run: |
+          echo "branch_name=${GITHUB_REF##*/}" >> $GITHUB_OUTPUT
+          echo "branch_type=$(echo ${GITHUB_REF##*/} | cut -d/ -f1)" >> $GITHUB_OUTPUT
+
+      - name: Handle feature branches
+        if: steps.branch.outputs.branch_type == 'feature'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: sync/${{ steps.branch.outputs.branch_name }}-to-${{ inputs.develop_branch }}
+          base: ${{ inputs.develop_branch }}
+          title: "Feature → develop: ${{ steps.branch.outputs.branch_name }}"
+          body: "Automatisch PR van feature branch naar develop."
+          commit-message: "Sync feature/${{ steps.branch.outputs.branch_name }} → develop"
+
+      - name: Handle release branches
+        if: steps.branch.outputs.branch_type == 'release'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: sync/${{ steps.branch.outputs.branch_name }}-to-${{ inputs.main_branch }}
+          base: ${{ inputs.main_branch }}
+          title: "Release → main: ${{ steps.branch.outputs.branch_name }}"
+          body: "Automatisch PR van release branch naar main."
+          commit-message: "Sync release/${{ steps.branch.outputs.branch_name }} → main"
+
+      - name: Backmerge release to develop
+        if: steps.branch.outputs.branch_type == 'release'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: sync/${{ steps.branch.outputs.branch_name }}-to-${{ inputs.develop_branch }}
+          base: ${{ inputs.develop_branch }}
+          title: "Release → develop: ${{ steps.branch.outputs.branch_name }}"
+          body: "Backmerge van release naar develop."
+          commit-message: "Sync release/${{ steps.branch.outputs.branch_name }} → develop"
+
+      - name: Handle hotfix branches
+        if: steps.branch.outputs.branch_type == 'hotfix'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: sync/${{ steps.branch.outputs.branch_name }}-to-${{ inputs.main_branch }}
+          base: ${{ inputs.main_branch }}
+          title: "Hotfix → main: ${{ steps.branch.outputs.branch_name }}"
+          body: "Automatisch PR van hotfix naar main."
+          commit-message: "Sync hotfix/${{ steps.branch.outputs.branch_name }} → main"
+
+      - name: Backmerge hotfix to develop
+        if: steps.branch.outputs.branch_type == 'hotfix'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: sync/${{ steps.branch.outputs.branch_name }}-to-${{ inputs.develop_branch }}
+          base: ${{ inputs.develop_branch }}
+          title: "Hotfix → develop: ${{ steps.branch.outputs.branch_name }}"
+          body: "Backmerge van hotfix naar develop."
+          commit-message: "Sync hotfix/${{ steps.branch.outputs.branch_name }} → develop"

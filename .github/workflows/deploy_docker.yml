@@ -1,0 +1,76 @@
+name: Build & Deploy Docker
+
+on:
+  workflow_call:
+    inputs:
+      image_name:
+        required: false
+        type: string
+      registry:
+        required: false
+        type: string
+        default: ghcr.io
+      main_branch:
+        required: false
+        type: string
+        default: master
+      develop_branch:
+        required: false
+        type: string
+        default: develop
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    outputs:
+      image_sha_tag: ${{ steps.build.outputs.sha_tag }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ inputs.registry }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Determine image name
+        id: image
+        run: |
+          IMAGE_NAME="${{ inputs.image_name }}"
+          if [ -z "$IMAGE_NAME" ]; then
+            IMAGE_NAME="${GITHUB_REPOSITORY##*/}"
+          fi
+          echo "image_name=$IMAGE_NAME" >> $GITHUB_OUTPUT
+
+      - name: Extract branch info
+        id: extract
+        run: |
+          BRANCH_NAME="${GITHUB_REF##*/}"
+          if [[ "$BRANCH_NAME" == release/* ]]; then
+            TAG="${BRANCH_NAME#release/}"   # strip "release/"
+          else
+            TAG="$BRANCH_NAME"
+          fi
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+      - name: Build & Push image
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ inputs.registry }}/${{ github.repository_owner }}/${{ steps.image.outputs.image_name }}:${{ github.sha }}
+            ${{ inputs.registry }}/${{ github.repository_owner }}/${{ steps.image.outputs.image_name }}:${{ steps.extract.outputs.tag }}
+        outputs:
+          sha_tag: ${{ inputs.registry }}/${{ github.repository_owner }}/${{ steps.image.outputs.image_name }}:${{ github.sha }}
