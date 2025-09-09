@@ -65,7 +65,28 @@ jobs:
   call-gitflow:
     uses: unframed/tooling-workflows/.github/workflows/process_gitflow.yml@master
     with:
-      main_branch: main
+      main_branch: master
+      develop_branch: develop
+```
+
+
+## GitFlow
+
+```yaml
+name: Kustomize Merge Trigger
+
+on:
+  push:
+    branches:
+      - master
+      - develop
+      - release/*
+
+jobs:
+  call-kustomize:
+    uses: unframed/tooling-workflows/.github/workflows/process_kustomize.yml@master
+    with:
+      main_branch: master
       develop_branch: develop
 ```
 

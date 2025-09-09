@@ -1,0 +1,106 @@
+name: K8s Values Sync
+
+on:
+  workflow_call:
+    inputs:
+      main_branch:
+        required: false
+        type: string
+        default: master
+      develop_branch:
+        required: false
+        type: string
+        default: develop
+
+jobs:
+  sync-k8s-values:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v44
+        with:
+          files: |
+            .k8s/base/values.yaml
+            .k8s/overlays/*/values.yaml
+
+      - name: Setup yq
+        if: steps.changed-files.outputs.any_changed == 'true'
+        run: |
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+          yq --version
+
+      - name: Merge values for testing
+        if: contains(steps.changed-files.outputs.all_changed_files, '.k8s/base/values.yaml') || contains(steps.changed-files.outputs.all_changed_files, '.k8s/overlays/testing/values.yaml')
+        run: |
+          if [ -f ".k8s/base/values.yaml" ] && [ -f ".k8s/overlays/testing/values.yaml" ]; then
+            echo "Merging base and testing values..."
+            yq eval-all 'select(fileIndex == 0) * select(fileIndex == 1)' \
+              .k8s/base/values.yaml \
+              .k8s/overlays/testing/values.yaml > .k8s/overlays/testing/values_merged.yaml
+            echo "✓ Created .k8s/overlays/testing/values_merged.yaml"
+          fi
+
+      - name: Merge values for acceptance
+        if: contains(steps.changed-files.outputs.all_changed_files, '.k8s/base/values.yaml') || contains(steps.changed-files.outputs.all_changed_files, '.k8s/overlays/acceptance/values.yaml')
+        run: |
+          if [ -f ".k8s/base/values.yaml" ] && [ -f ".k8s/overlays/acceptance/values.yaml" ]; then
+            echo "Merging base and acceptance values..."
+            yq eval-all 'select(fileIndex == 0) * select(fileIndex == 1)' \
+              .k8s/base/values.yaml \
+              .k8s/overlays/acceptance/values.yaml > .k8s/overlays/acceptance/values_merged.yaml
+            echo "✓ Created .k8s/overlays/acceptance/values_merged.yaml"
+          fi
+
+      - name: Merge values for production
+        if: contains(steps.changed-files.outputs.all_changed_files, '.k8s/base/values.yaml') || contains(steps.changed-files.outputs.all_changed_files, '.k8s/overlays/production/values.yaml')
+        run: |
+          if [ -f ".k8s/base/values.yaml" ] && [ -f ".k8s/overlays/production/values.yaml" ]; then
+            echo "Merging base and production values..."
+            yq eval-all 'select(fileIndex == 0) * select(fileIndex == 1)' \
+              .k8s/base/values.yaml \
+              .k8s/overlays/production/values.yaml > .k8s/overlays/production/values_merged.yaml
+            echo "✓ Created .k8s/overlays/production/values_merged.yaml"
+          fi
+
+      - name: Check for changes in merged files
+        id: check-changes
+        run: |
+          if git diff --quiet; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Pull Request
+        if: steps.check-changes.outputs.has_changes == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: sync/k8s-values-${{ github.run_number }}
+          base: ${{ github.ref_name }}
+          title: "K8s: Update merged values files"
+          body: |
+            🔄 **Automatische update van K8s values_merged.yaml bestanden**
+            
+            Deze PR is automatisch gegenereerd omdat er wijzigingen zijn gedetecteerd in:
+            ${{ steps.changed-files.outputs.all_changed_files }}
+            
+            **Geüpdatete bestanden:**
+            - `.k8s/overlays/testing/values_merged.yaml`
+            - `.k8s/overlays/acceptance/values_merged.yaml`
+            - `.k8s/overlays/production/values_merged.yaml`
+            
+            De merged bestanden zijn automatisch gegenereerd door het combineren van:
+            - `.k8s/base/values.yaml` (basis configuratie)
+            - `.k8s/overlays/{env}/values.yaml` (omgeving-specifieke overrides)
+          commit-message: "chore(k8s): update merged values files"
+          assignees: ${{ github.actor }}
+          draft: false
