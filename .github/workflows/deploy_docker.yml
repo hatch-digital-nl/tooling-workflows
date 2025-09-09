@@ -18,6 +18,10 @@ on:
         required: false
         type: string
         default: develop
+    outputs:
+      image_sha_tag:
+        description: "The full image with SHA"
+        value: ${{ jobs.build-and-push.outputs.sha_tag }}
 
 jobs:
   build-and-push:
@@ -25,10 +29,6 @@ jobs:
     permissions:
       contents: read
       packages: write
-
-    outputs:
-      image_sha_tag: ${{ steps.build.outputs.sha_tag }}
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -74,4 +74,4 @@ jobs:
             ${{ inputs.registry }}/${{ github.repository_owner }}/${{ steps.image.outputs.image_name }}:${{ steps.extract.outputs.tag }}
       - name: Set job output
         run: echo "sha_tag=${{ inputs.registry }}/${{ github.repository_owner }}/${{ steps.image.outputs.image_name }}:${{ github.sha }}" >> $GITHUB_OUTPUT
-        id: output
+        id: set_output
