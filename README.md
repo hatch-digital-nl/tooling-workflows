@@ -32,13 +32,13 @@ on:
 
 jobs:
   deploy:
-    uses: unframed/tooling-workflows/.github/workflows/deploy_docker.yml@master
+    uses: unframed-nl/tooling-workflows/.github/workflows/deploy_docker.yml@master
     with:
       image_name: myapp
 
   update-kustomize:
     needs: deploy
-    uses: unframed/tooling-workflows/.github/workflows/deploy_kustomize.yml@master
+    uses: unframed-nl/tooling-workflows/.github/workflows/deploy_kustomize.yml@master
     with:
       kustomize_image: ./deploy/overlays/dev
       image_tag: ${{ needs.deploy.outputs.image_sha_tag }}
@@ -63,7 +63,7 @@ on:
 
 jobs:
   call-gitflow:
-    uses: unframed/tooling-workflows/.github/workflows/process_gitflow.yml@master
+    uses: unframed-nl/tooling-workflows/.github/workflows/process_gitflow.yml@master
     with:
       main_branch: master
       develop_branch: develop
@@ -84,7 +84,7 @@ on:
 
 jobs:
   call-kustomize:
-    uses: unframed/tooling-workflows/.github/workflows/process_kustomize.yml@master
+    uses: unframed-nl/tooling-workflows/.github/workflows/process_kustomize.yml@master
     with:
       main_branch: master
       develop_branch: develop
