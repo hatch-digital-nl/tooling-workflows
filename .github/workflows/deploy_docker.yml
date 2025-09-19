@@ -26,6 +26,14 @@ on:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    environment: |
+      ${{
+           github.ref_name == 'master'  && 'Production'
+        || github.ref_name == 'main'    && 'Production'
+        || github.ref_name == 'develop' && 'Testing'
+        || startsWith(github.ref_name, 'release/') && 'Acceptance'
+        || 'Unknown'
+      }}
     outputs:
       sha_tag: ${{ steps.set_output.outputs.sha_tag }}
     permissions:
@@ -76,4 +84,5 @@ jobs:
             ${{ inputs.registry }}/${{ github.repository_owner }}/${{ steps.image.outputs.image_name }}:${{ steps.extract.outputs.tag }}
       - name: Set job output
         run: echo "sha_tag=${{ inputs.registry }}/${{ github.repository_owner }}/${{ steps.image.outputs.image_name }}:${{ github.sha }}" >> $GITHUB_OUTPUT
+
         id: set_output
