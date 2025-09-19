@@ -18,6 +18,10 @@ on:
         required: false
         type: string
         default: develop
+      build_args:
+        description: 'Multiline string of build arguments passed to docker build'
+        required: false
+        type: string
     outputs:
       image_sha_tag:
         description: "The full image with SHA"
@@ -82,6 +86,7 @@ jobs:
           tags: |
             ${{ inputs.registry }}/${{ github.repository_owner }}/${{ steps.image.outputs.image_name }}:${{ github.sha }}
             ${{ inputs.registry }}/${{ github.repository_owner }}/${{ steps.image.outputs.image_name }}:${{ steps.extract.outputs.tag }}
+          build-args: ${{ inputs.build_args }}
       - name: Set job output
         run: echo "sha_tag=${{ inputs.registry }}/${{ github.repository_owner }}/${{ steps.image.outputs.image_name }}:${{ github.sha }}" >> $GITHUB_OUTPUT
 
