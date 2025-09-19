@@ -16,6 +16,10 @@ jobs:
     uses: unframed/tooling-workflows/.github/workflows/deploy_docker.yml@master
     with:
       image_name: myapp
+      build_args: |
+        ENVIRONMENT=dev
+    secrets: inherit
+      
 ```
 
 ## Docker + Kustomize
