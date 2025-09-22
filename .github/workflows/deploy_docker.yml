@@ -19,9 +19,9 @@ on:
         type: string
         default: develop
       build_args:
-        description: 'Multiline string of build arguments passed to docker build'
         required: false
         type: string
+        description: "Additional build arguments (multiline string)"
     outputs:
       image_sha_tag:
         description: "The full image with SHA"
@@ -83,6 +83,8 @@ jobs:
         with:
           context: .
           push: true
+          build-args: |
+            ${{ inputs.build_args }}
           tags: |
             ${{ inputs.registry }}/${{ github.repository_owner }}/${{ steps.image.outputs.image_name }}:${{ github.sha }}
             ${{ inputs.registry }}/${{ github.repository_owner }}/${{ steps.image.outputs.image_name }}:${{ steps.extract.outputs.tag }}
