@@ -90,5 +90,4 @@ jobs:
             ${{ inputs.registry }}/${{ github.repository_owner }}/${{ steps.image.outputs.image_name }}:${{ steps.extract.outputs.tag }}
       - name: Set job output
         run: echo "sha_tag=${{ inputs.registry }}/${{ github.repository_owner }}/${{ steps.image.outputs.image_name }}:${{ github.sha }}" >> $GITHUB_OUTPUT
-
         id: set_output
