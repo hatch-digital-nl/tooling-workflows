@@ -13,6 +13,14 @@ on:
 jobs:
   update-kustomize:
     runs-on: ubuntu-latest
+    environment: |
+      ${{
+           github.ref_name == 'master'  && 'Production'
+        || github.ref_name == 'main'    && 'Production'
+        || github.ref_name == 'develop' && 'Testing'
+        || startsWith(github.ref_name, 'release/') && 'Acceptance'
+        || 'Unknown'
+      }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
