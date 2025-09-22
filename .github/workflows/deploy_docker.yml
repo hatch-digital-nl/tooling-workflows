@@ -77,6 +77,15 @@ jobs:
           fi
           echo "tag=$TAG" >> $GITHUB_OUTPUT
 
+      - name: Prepare build args from secrets
+        id: build_args
+        run: |
+          # Convert secrets JSON to build-args format
+          echo '${{ toJSON(secrets) }}' | jq -r 'to_entries[] | "\(.key)=\(.value)"' > build_args.txt
+          echo "build_args<<EOF" >> $GITHUB_OUTPUT
+          cat build_args.txt >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
       - name: Build & Push image
         id: build
         uses: docker/build-push-action@v6
@@ -84,10 +93,12 @@ jobs:
           context: .
           push: true
           build-args: |
+            ${{ steps.build_args.outputs.build_args }}
             ${{ inputs.build_args }}
           tags: |
             ${{ inputs.registry }}/${{ github.repository_owner }}/${{ steps.image.outputs.image_name }}:${{ github.sha }}
             ${{ inputs.registry }}/${{ github.repository_owner }}/${{ steps.image.outputs.image_name }}:${{ steps.extract.outputs.tag }}
+            
       - name: Set job output
-        run: echo "sha_tag=${{ inputs.registry }}/${{ github.repository_owner }}/${{ steps.image.outputs.image_name }}:${{ github.sha }}" >> $GITHUB_OUTPUT
         id: set_output
+        run: echo "sha_tag=${{ inputs.registry }}/${{ github.repository_owner }}/${{ steps.image.outputs.image_name }}:${{ github.sha }}" >> $GITHUB_OUTPUT
