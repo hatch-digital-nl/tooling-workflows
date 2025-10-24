@@ -25,7 +25,7 @@ on:
 
 jobs:
   deploy:
-    uses: unframed-nl/tooling-workflows/.github/workflows/deploy_docker.yml@master
+    uses: hatch-digital-nl/tooling-workflows/.github/workflows/deploy_docker.yml@master
     permissions:
       contents: read
       packages: write
@@ -48,7 +48,7 @@ on:
 
 jobs:
   deploy:
-    uses: unframed-nl/tooling-workflows/.github/workflows/deploy_docker.yml@master
+    uses: hatch-digital-nl/tooling-workflows/.github/workflows/deploy_docker.yml@master
     permissions:
       contents: read
       packages: write
@@ -85,7 +85,7 @@ on:
 
 jobs:
   deploy:
-    uses: unframed-nl/tooling-workflows/.github/workflows/deploy_docker.yml@master
+    uses: hatch-digital-nl/tooling-workflows/.github/workflows/deploy_docker.yml@master
     permissions:
       contents: read
       packages: write
@@ -94,7 +94,7 @@ jobs:
 
   update-kustomize:
     needs: deploy
-    uses: unframed-nl/tooling-workflows/.github/workflows/deploy_kustomize.yml@master
+    uses: hatch-digital-nl/tooling-workflows/.github/workflows/deploy_kustomize.yml@master
     with:
       kustomize_image: myapp:develop
       image_tag: ${{ needs.deploy.outputs.image_sha_tag }}
@@ -117,7 +117,7 @@ on:
 
 jobs:
   call-gitflow:
-    uses: unframed-nl/tooling-workflows/.github/workflows/process_gitflow.yml@master
+    uses: hatch-digital-nl/tooling-workflows/.github/workflows/process_gitflow.yml@master
     with:
       main_branch: master
       develop_branch: develop
@@ -138,7 +138,7 @@ on:
 
 jobs:
   call-kustomize:
-    uses: unframed-nl/tooling-workflows/.github/workflows/process_kustomize.yml@master
+    uses: hatch-digital-nl/tooling-workflows/.github/workflows/process_kustomize.yml@master
     permissions:
       contents: write
       pull-requests: write
@@ -146,4 +146,5 @@ jobs:
       main_branch: master
       develop_branch: develop
 ```
+
 
