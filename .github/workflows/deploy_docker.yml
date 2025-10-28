@@ -22,6 +22,16 @@ on:
         required: false
         type: string
         description: "Additional build arguments (multiline string)"
+      needs_composer_auth:
+        required: false
+        type: boolean
+        description: "Set to true to generate and inject COMPOSER_AUTH token"
+        default: false
+    secrets:
+      APP_ID:
+        required: false
+      APP_PRIVATE_KEY:
+        required: false
     outputs:
       image_sha_tag:
         description: "The full image with SHA"
@@ -77,6 +87,14 @@ jobs:
           fi
           echo "tag=$TAG" >> $GITHUB_OUTPUT
 
+      - name: Generate Composer Auth token
+        id: generate_token
+        if: inputs.needs_composer_auth == 'true'
+        uses: tibdex/github-app-token@v1.5.2
+        with:
+          app_id: ${{ secrets.APP_ID }}
+          private_key: ${{ secrets.APP_PRIVATE_KEY }}
+
       - name: Prepare build args from secrets
         id: build_args
         run: |
@@ -85,6 +103,13 @@ jobs:
           echo "build_args<<EOF" >> $GITHUB_OUTPUT
           cat build_args.txt >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Prepare Composer Auth
+        id: composer_auth
+        if: inputs.needs_composer_auth == true
+        run: |
+          COMPOSER_AUTH='{"github-oauth": {"github.com": "${{ steps.generate_token.outputs.token }}"}}'
+          echo "composer_auth=$COMPOSER_AUTH" >> $GITHUB_OUTPUT
 
       - name: Build & Push image
         id: build
@@ -95,6 +120,7 @@ jobs:
           build-args: |
             ${{ steps.build_args.outputs.build_args }}
             ${{ inputs.build_args }}
+            ${{ inputs.needs_composer_auth == true && format('COMPOSER_AUTH={0}', steps.composer_auth.outputs.composer_auth) || '' }}
           tags: |
             ${{ inputs.registry }}/${{ github.repository_owner }}/${{ steps.image.outputs.image_name }}:${{ github.sha }}
             ${{ inputs.registry }}/${{ github.repository_owner }}/${{ steps.image.outputs.image_name }}:${{ steps.extract.outputs.tag }}
