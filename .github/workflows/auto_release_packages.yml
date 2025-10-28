@@ -22,42 +22,40 @@ jobs:
         with:
           fetch-depth: 2
 
-      - name: Get version changes
-        id: get_versions
+      - name: Get version from composer.json
+        id: get_version
         run: |
-          # Get current version from the latest commit (HEAD)
-          CURRENT_VERSION=$(jq -r .version composer.json)
-          
-          # Get the version from the previous commit (HEAD~1)
-          PREVIOUS_VERSION=$(git show HEAD~1:composer.json | jq -r .version || echo "0.0.0")
-          
-          echo "Current version: $CURRENT_VERSION"
-          echo "Previous version: $PREVIOUS_VERSION"
-          
-          echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
-          
-          if [ "$CURRENT_VERSION" != "$PREVIOUS_VERSION" ]; then
-            echo "version_changed=true" >> $GITHUB_OUTPUT
+          # Just read the version from the file at the current commit
+          VERSION=$(jq -r .version composer.json)
+          echo "Found version $VERSION in composer.json."
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Check if tag already exists
+        id: check_tag
+        env:
+          TAG: ${{ steps.get_version.outputs.version }}
+        run: |
+          # This command checks if the tag exists locally
+          # We fetched all tags, so this is accurate.
+          if git rev-parse "refs/tags/$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists."
+            echo "tag_exists=true" >> $GITHUB_OUTPUT
           else
-            echo "version_changed=false" >> $GITHUB_OUTPUT
+            echo "Tag $TAG does not exist."
+            echo "tag_exists=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Create Tag and Release on Version Change
-        if: steps.get_versions.outputs.version_changed == 'true'
+      - name: Create Tag and Release
+        if: steps.check_tag.outputs.tag_exists == 'false'
         env:
           GITHUB_TOKEN: ${{ secrets.token }}
-          TAG: ${{ steps.get_versions.outputs.current_version }}
+          TAG: ${{ steps.get_version.outputs.version }}
         run: |
-          echo "Version changed to $TAG. Creating release."
-
-          if git rev-parse "refs/tags/$TAG" >/dev/null 2>&1; then
-            echo "Tag $TAG already exists. No new release will be created."
-            exit 0
-          fi
-
+          echo "Creating new release for $TAG..."
           gh release create "$TAG" \
             --title "Release $TAG" \
-            --notes "Automatic release triggered by version change to $TAG in composer.json."
+            --notes "Automatic release triggered by version $TAG in composer.json."
+          echo "Release $TAG created successfully."
 
       - name: No Version Change
         if: steps.get_versions.outputs.version_changed == 'false'
