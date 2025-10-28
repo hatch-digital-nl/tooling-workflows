@@ -55,4 +55,23 @@ jobs:
           done
           echo "--- Backfill complete! ---"
 
+      - name: Mark lastest tag as latest release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          LATEST_TAG=$(git tag --sort=-v:refname | head -n 1)
+          
+          if [ -z "$LATEST_TAG" ]; then
+            echo "Could not determine the latest tag."
+            exit 0
+          fi
+
+          gh release edit "$LATEST_TAG" \
+            --repo "$GH_REPO" \
+            --latest
+          
+          echo "Successfully marked $LATEST_TAG as the 'Latest' release."
+          echo "--- Backfill complete! ---"
+          
 
