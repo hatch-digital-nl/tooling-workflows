@@ -1,0 +1,52 @@
+name: Reusable Backfill Releases from Tags
+
+on:
+  workflow_call:
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code and all tags
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create releases for tags that are missing one
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          # Get all tags from the local checkout
+          tags=$(git tag)
+          
+          if [ -z "$tags" ]; then
+            echo "No tags found in this repository."
+            exit 0
+          fi
+
+          echo "Found tags: $tags"
+          echo "Checking each tag and creating releases if they are missing..."
+
+          # Loop over each tag
+          for tag in $tags; do
+            echo "--- Checking tag: $tag ---"
+          
+            # Check if a release already exists for this tag
+            # 'gh release view' will fail (exit > 0) if the release doesn't exist
+            if ! gh release view "$tag" --repo "$GH_REPO" >/dev/null 2>&1; then
+              echo "Release for $tag does not exist. Creating..."
+          
+              # Create the release.
+              gh release create "$tag" \
+                --repo "$GH_REPO" \
+                --title "Release $tag" \
+                --notes "Backfilled release for version $tag, migrated from GitLab."
+          
+              echo "Successfully created release for $tag."
+            else
+              echo "Release for $tag already exists. Skipping."
+            fi
+          done
+          echo "--- Backfill complete! ---"
