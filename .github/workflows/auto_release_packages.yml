@@ -7,10 +7,6 @@ on:
         description: 'The default branch to check for pushes'
         required: true
         type: string
-    secrets:
-      token:
-        description: 'The GITHUB_TOKEN from the calling repo'
-        required: true
 
 jobs:
   check-version-and-release:
@@ -48,7 +44,7 @@ jobs:
       - name: Create Tag and Release
         if: steps.check_tag.outputs.tag_exists == 'false'
         env:
-          GITHUB_TOKEN: ${{ secrets.token }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ steps.get_version.outputs.version }}
         run: |
           echo "Creating new release for $TAG..."
