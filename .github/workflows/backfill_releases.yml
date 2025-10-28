@@ -11,7 +11,11 @@ jobs:
       - name: Check out code and all tags
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 1
+
+      - name: Fetch all tags from remote
+        run: |
+          git fetch --tags --force
 
       - name: Create releases for tags that are missing one
         env:
@@ -25,10 +29,10 @@ jobs:
             echo "No tags found in this repository."
             exit 0
           fi
-
+          
           echo "Found tags: $tags"
           echo "Checking each tag and creating releases if they are missing..."
-
+          
           # Loop over each tag
           for tag in $tags; do
             echo "--- Checking tag: $tag ---"
@@ -50,3 +54,5 @@ jobs:
             fi
           done
           echo "--- Backfill complete! ---"
+
+
