@@ -95,7 +95,7 @@ jobs:
         id: composer_auth
         if: inputs.needs_composer_auth == true
         run: |
-          COMPOSER_AUTH='{"github-oauth": {"github.com": "${{ secrets.GITHUB_TOKEN }}"}}'
+          COMPOSER_AUTH='{"github-oauth": {"github.com": "${{ secrets.COMPOSER_GITHUB_TOKEN }}"}}'
           echo "composer_auth=$COMPOSER_AUTH" >> $GITHUB_OUTPUT
 
       - name: Build & Push image
@@ -115,3 +115,4 @@ jobs:
       - name: Set job output
         id: set_output
         run: echo "sha_tag=${{ inputs.registry }}/${{ github.repository_owner }}/${{ steps.image.outputs.image_name }}:${{ github.sha }}" >> $GITHUB_OUTPUT
+
