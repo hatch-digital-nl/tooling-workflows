@@ -28,11 +28,11 @@ jobs:
       - name: Determine overlay path
         id: overlay
         run: |
-          if [[ "$GITHUB_REF" == "develop" ]]; then
+          if [[ "${{ github.ref_name }}" == "develop" ]]; then
             OVERLAY=".k8s/overlays/testing"
-          elif [[ "$GITHUB_REF" == release/* ]]; then
+          elif [[ "${{ github.ref_name }}" == release/* ]]; then
             OVERLAY=".k8s/overlays/acceptance"
-          elif [[ "$GITHUB_REF" == main || "$GITHUB_REF" == master ]]; then
+          elif [[ "${{ github.ref_name }}" == "main" || "${{ github.ref_name }}" == "master" ]]; then
             OVERLAY=".k8s/overlays/production"
           else
             echo "Branch not mapped to overlay, exiting"
@@ -57,4 +57,5 @@ jobs:
           git add .
           git commit -m "Update image to ${{ inputs.image_tag }} [skip ci]" || echo "No changes"
           git push
+
 
